@@ -1,192 +1,267 @@
 /**
  * Author: Juntaran
  * Email:  Jacinthmail@gmail.com
- * Date:   2017/3/29 06:35
+ * Date:   2017/3/29 07:14
  */
 
 package main
 
 import (
+	"VLCBF_ALL/General"
+	"VLCBF_ALL/Hash"
 	"fmt"
 	"time"
+	//"VLCBF_ALL/Test"
 )
 
-var m = 300000 // BloomFilter里最大存储量
+var M = 300000               // BloomFilter里最大存储量
+var indexTable []int         // 索引表存储了每个0的位置，index[i]为第i+1个0所在的位置
+var indexTable100 []int      // 100索引表，index[i]为第(100*i+1)个0所在的位置
+var check_array [2400000]int // 校验数组，共300000位，每位占4个
 
-func initBloom(myBloom []int, m int) []int {
-	// 初始化BloomFilter
-	for i := 0; i < m; i++ {
-		myBloom = append(myBloom, 0)
-	}
+/*******************************************************************/
+// VLCBF操作
+func insertVLCBF(myBloom []int, word string) []int {
+	// 插入一条规则
+	var h1 = Hash.SDBMHash(word)
+	var h2 = Hash.JSHash(word)
+	myBloom, indexTable = General.InsertEleIndex100(myBloom, indexTable, h1, M)
+	myBloom, indexTable = General.InsertEleIndex100(myBloom, indexTable, h2, M)
+
 	return myBloom
 }
 
-func insertEle(myBloom []int, index int) []int {
-	// 插入元素
-	if index >= len(myBloom) {
-		fmt.Println("Error")
+func deleteVLCBF(myBloom []int, word string) []int {
+	// 删除一条规则
+	if queryVLCBF(myBloom, word) == 0 {
 		return myBloom
 	}
+	var h1 = Hash.SDBMHash(word)
+	var h2 = Hash.JSHash(word)
+	myBloom, indexTable = General.DeleteEleIndex100(myBloom, indexTable, h1, M)
+	myBloom, indexTable = General.DeleteEleIndex100(myBloom, indexTable, h2, M)
 
-	var count = 0
-	for i := 0; i < len(myBloom); i++ {
-		if myBloom[i] == 0 {
-			count++
-		}
-		if count == index {
-			last := append([]int{}, myBloom[i+1:]...)
-			myBloom = append(myBloom[0:i+1], 1)
-			myBloom = append(myBloom, last...)
-			return myBloom
-			break
-		}
-	}
 	return myBloom
 }
 
-func queryEle(myBloom []int, index int) int {
-	// 查找元素
-	var count = 0
-	for i := 0; i < len(myBloom); i++ {
-		if myBloom[i] == 0 {
-			count++
-		}
-		if count == index {
-			if myBloom[i+1] == 1 {
-				//fmt.Println("get!")
-				return 1
-			}
-		}
-	}
-	return 0
-}
-
-func deleteEle(myBloom []int, index int) []int {
-	// 删除元素
-	var count = 0
-	for i := 0; i < len(myBloom); i++ {
-		if myBloom[i] == 0 {
-			count++
-		}
-		if count == index {
-			if myBloom[i+1] == 1 {
-				myBloom = append(myBloom[:i+1], myBloom[i+2:]...)
-				//fmt.Println("delete!")
-				return myBloom
-				break
-			} else {
-				//fmt.Println("Not Found!")
-				return myBloom
-			}
-		}
-	}
-	return myBloom
-}
-
-func SDBMHash(word string) int {
-	var i = 0
-	var hash int
-	for {
-		if i >= len(word) {
-			break
-		}
-		hash = int(word[i]) + (hash << 6) + (hash << 16) - hash
-		i++
-	}
-	return (hash & 0x7FFFFFFF / 3000)
-}
-
-func RSHash(word string) int {
-	var i = 0
-	var hash int
-	var a = 63689
-	var b = 378661
-	for {
-		if i >= len(word) {
-			break
-		}
-		hash = hash*a + int(word[i])
-		i++
-		a *= b
-	}
-	return (hash & 0x7FFFFFFF / 3000)
-}
-
-func JSHash(word string) int {
-	var i = 0
-	var hash = 1315423911
-	for {
-		if i >= len(word) {
-			break
-		}
-		hash ^= ((hash << 5) + int(word[i]) + (hash >> 2))
-		i++
-	}
-	return (hash & 0x7FFFFFFF / 3000)
-}
-
-func insertBloom(myBloom []int, word string) []int {
-	// 插入一条规则
-	var h1 = SDBMHash(word)
-	var h2 = JSHash(word)
-	myBloom = insertEle(myBloom, h1)
-	myBloom = insertEle(myBloom, h2)
-	return myBloom
-}
-
-func deleteBloom(myBloom []int, word string) []int {
-	// 删除一条规则
-	var h1 = SDBMHash(word)
-	var h2 = JSHash(word)
-	myBloom = deleteEle(myBloom, h1)
-	myBloom = deleteEle(myBloom, h2)
-	return myBloom
-}
-
-func queryBloom(myBloom []int, word string) int {
+func queryVLCBF(myBloom []int, word string) int {
 	// 查询一条规则
-	var h1 = SDBMHash(word)
-	var h2 = JSHash(word)
-	var result = queryEle(myBloom, h1) & queryEle(myBloom, h2)
-	return result
+	var h1 = Hash.SDBMHash(word)
+	var h2 = Hash.JSHash(word)
+
+	var res1 = General.QueryEleIndex100(myBloom, indexTable, h1)
+	var res2 = General.QueryEleIndex100(myBloom, indexTable, h2)
+
+	if res1 == 0 || res2 == 0 {
+		// 不在集合中
+		return 0
+	}
+	return 1
 }
+
+func updateVLCBF(myBloom []int, word string, count int) {
+	// 更新删除操作
+	for i := 0; i < count/4; i++ {
+		myBloom = insertVLCBF(myBloom, word)
+		myBloom = deleteVLCBF(myBloom, word)
+	}
+	for i := 0; i < count/4; i++ {
+		myBloom = deleteVLCBF(myBloom, word)
+	}
+	for i := 0; i < count/4; i++ {
+		myBloom = insertVLCBF(myBloom, word)
+	}
+}
+
+func queryNTimeVLCBF(myBloom []int, word string, count int) {
+	// 查询N次
+	for i := 0; i < count; i++ {
+		_ = queryVLCBF(myBloom, word)
+	}
+}
+
+/*******************************************************************/
+
+/*******************************************************************/
+// VLCBF_V操作
+func insertVLCBF_V(myBloom []int, word string) []int {
+	// 插入一条规则
+	var h1 = Hash.SDBMHash(word)
+	var h2 = Hash.JSHash(word)
+
+	myBloom, indexTable = General.InsertEleIndex100(myBloom, indexTable, h1, M)
+	myBloom, indexTable = General.InsertEleIndex100(myBloom, indexTable, h2, M)
+
+	// 校验数组修改
+	var checkpos = Hash.RSHash(word)
+	//fmt.Println("checkpos:", checkpos)
+	A, B, C, D := 0, 0, 0, 0
+	if checkpos%2 != 0 {
+		A = 1
+	}
+	if (checkpos/2)%2 != 0 {
+		B = 1
+	}
+	if (checkpos/4)%2 != 0 {
+		C = 1
+	}
+	if (checkpos/8)%2 != 0 {
+		D = 1
+	}
+	check_array[checkpos*4] = check_array[checkpos*4] ^ A
+	check_array[checkpos*4+1] = check_array[checkpos*4+1] ^ B
+	check_array[checkpos*4+2] = check_array[checkpos*4+2] ^ C
+	check_array[checkpos*4+3] = check_array[checkpos*4+3] ^ D
+
+	return myBloom
+}
+
+func deleteVLCBF_V(myBloom []int, word string) []int {
+	// 删除一条规则
+	if queryVLCBF_V(myBloom, word) == 0 {
+		return myBloom
+	}
+	var h1 = Hash.SDBMHash(word)
+	var h2 = Hash.JSHash(word)
+	myBloom, indexTable = General.DeleteEleIndex100(myBloom, indexTable, h1, M)
+	myBloom, indexTable = General.DeleteEleIndex100(myBloom, indexTable, h2, M)
+
+	// 校验数组修改
+	var checkpos = Hash.RSHash(word)
+	A, B, C, D := 0, 0, 0, 0
+	if checkpos%2 != 0 {
+		A = 1
+	}
+	if (checkpos/2)%2 != 0 {
+		B = 1
+	}
+	if (checkpos/4)%2 != 0 {
+		C = 1
+	}
+	if (checkpos/8)%2 != 0 {
+		D = 1
+	}
+	check_array[checkpos*4] = check_array[checkpos*4] ^ A
+	check_array[checkpos*4+1] = check_array[checkpos*4+1] ^ B
+	check_array[checkpos*4+2] = check_array[checkpos*4+2] ^ C
+	check_array[checkpos*4+3] = check_array[checkpos*4+3] ^ D
+
+	return myBloom
+}
+
+func queryVLCBF_V(myBloom []int, word string) int {
+	// 查询一条规则
+	var h1 = Hash.SDBMHash(word)
+	var h2 = Hash.JSHash(word)
+	var res1 = General.QueryEleIndex100(myBloom, indexTable, h1)
+	var res2 = General.QueryEleIndex100(myBloom, indexTable, h2)
+
+	if res1 == 0 || res2 == 0 {
+		// 不在集合中
+		return 0
+	}
+
+	// 校验
+	if res1 == 1 && res2 == 1 { // 说明前两个哈希函数找到了
+		var checkpos = Hash.RSHash(word) // 校验哈希函数算出来连续4位的值ABCD
+		A, B, C, D := 0, 0, 0, 0
+		if checkpos%2 != 0 {
+			A = 1
+		}
+		if (checkpos/2)%2 != 0 {
+			B = 1
+		}
+		if (checkpos/4)%2 != 0 {
+			C = 1
+		}
+		if (checkpos/8)%2 != 0 {
+			D = 1
+		}
+		if check_array[checkpos*4] == A && check_array[checkpos*4+1] == B && check_array[checkpos*4+2] == C && check_array[checkpos*4+3] == D {
+			// 校验位确定它在集合中
+			return 1
+		}
+	}
+	//fmt.Println("不确定")
+	return 2
+}
+
+func updateVLCBF_V(myBloom []int, word string, count int) {
+	// 更新删除操作
+	for i := 0; i < count/4; i++ {
+		myBloom = insertVLCBF_V(myBloom, word)
+		myBloom = deleteVLCBF_V(myBloom, word)
+	}
+	for i := 0; i < count/4; i++ {
+		myBloom = deleteVLCBF_V(myBloom, word)
+	}
+	for i := 0; i < count/4; i++ {
+		myBloom = insertVLCBF_V(myBloom, word)
+	}
+}
+
+func queryNTimeVLCBF_V(myBloom []int, word string, count int) {
+	// 查询N次
+	for i := 0; i < count; i++ {
+		_ = queryVLCBF_V(myBloom, word)
+	}
+}
+
+/*******************************************************************/
 
 func main() {
-	var myBloom []int
+	var myBloom []int // 布隆过滤器
 	fmt.Printf("length:%v\n", len(myBloom))
 
-	myBloom = initBloom(myBloom, m)
-	fmt.Printf("length:%v\n", len(myBloom))
+	myBloom, indexTable100 = General.InitBloom100(myBloom, indexTable100, M)
+	fmt.Println(indexTable100)
+	fmt.Println("length:", len(myBloom))
 
 	/* 一个小测试 */
-	//myBloom = insertEle(myBloom, 3)
-	//fmt.Printf("length:%v\n", len(myBloom))
-	//fmt.Println(myBloom)
-	//fmt.Println(queryEle(myBloom, 3))
-	//myBloom = deleteEle(myBloom, 3)
-	//fmt.Printf("length:%v\n", len(myBloom))
-	//fmt.Println(myBloom)
-	//fmt.Println(queryEle(myBloom, 3))
+	//Test.IndexTest(myBloom, indexTable, M)
+	//Test.NoneTest(myBloom, M)
+	//Test.Index100Test(myBloom, indexTable100, M)
 	/* 小测试结束 */
 
+	/*******************************************************************/
+	// 100索引
 	var word = "hello"
+	var TIMES = 100000
+	var start_time1, start_time2, start_time3, start_time4 time.Time
+	var during_time1, during_time2, during_time3, during_time4 time.Duration
 
-	var start_time time.Time
-	var during_time time.Duration
+	/*******************************************************************/
+	// VLCBF
+	fmt.Println("*******************************************")
+	fmt.Println("VLCBF:")
+	fmt.Println("Times:", TIMES)
 
-	start_time = time.Now()
-	myBloom = insertBloom(myBloom, word)
-	during_time = time.Since(start_time)
-	fmt.Println("during time:", during_time)
+	start_time1 = time.Now()
+	updateVLCBF(myBloom, word, TIMES/10)
+	during_time1 = time.Since(start_time1)
+	fmt.Println("Update during time:", during_time1)
 
-	start_time = time.Now()
-	myBloom = deleteBloom(myBloom, word)
-	during_time = time.Since(start_time)
-	fmt.Println("during time:", during_time)
+	start_time2 = time.Now()
+	queryNTimeVLCBF(myBloom, word, TIMES)
+	during_time2 = time.Since(start_time2)
+	fmt.Println("Query during time:", during_time2)
+	fmt.Println("*******************************************")
 
-	start_time = time.Now()
-	queryNTime(myBloom, word, 1)
-	during_time = time.Since(start_time)
-	fmt.Println("during time:", during_time)
+	/*******************************************************************/
+	// VLCBF_V
+	fmt.Println("*******************************************")
+	fmt.Println("VLCBF_V:")
+	fmt.Println("Times:", TIMES)
 
+	General.ResetBloom100(myBloom, indexTable, check_array, M)
+	start_time3 = time.Now()
+	updateVLCBF_V(myBloom, word, TIMES/10)
+	during_time3 = time.Since(start_time3)
+	fmt.Println("Update during time:", during_time3)
+
+	start_time4 = time.Now()
+	queryNTimeVLCBF_V(myBloom, word, TIMES)
+	during_time4 = time.Since(start_time4)
+	fmt.Println("Query during time:", during_time4)
+	fmt.Println("*******************************************")
 }
