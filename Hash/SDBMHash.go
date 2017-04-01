@@ -15,5 +15,5 @@ func SDBMHash(word string) int {		// 基本返回长度皆为10位以内
 	}
 	//fmt.Println("hash:", hash)
 
-	return (hash & 0x7FFFFFFF / 3000);
+	return GetPrefix(hash & 0x7FFFFFFF);
 }

@@ -8,14 +8,12 @@ func QueryEleIndex100(myBloom []int, indexTable []int, index int) int {
 	var k = (index+10)/10 - 1
 	var count = 0
 
-	for i := 10 * k; i < len(myBloom); i++ {
+	for i := indexTable[k]; i < len(myBloom); i++ {
 		if myBloom[i] == 0 {
 			count++
 		}
-		if count == (index - k) {
-			//fmt.Println("Bingo!")
+		if count == (index - k*10) {
 			if myBloom[i+1] == 1 {
-				//fmt.Println("get!")
 				if myBloom[i+2] != 1 {
 					return 1 // 查询到可以使用校验位
 				}
@@ -45,9 +43,7 @@ func QueryEle(myBloom []int, index int) int {
 			count++
 		}
 		if count == index {
-			//fmt.Println("bingo!", i)
 			if myBloom[i+1] == 1 {
-				//fmt.Println("get!")
 				if myBloom[i+2] != 1 {
 					return 1 // 查询到可以使用校验位
 				}

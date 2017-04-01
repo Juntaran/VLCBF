@@ -7,18 +7,17 @@ func DeleteEleIndex100(myBloom []int, indexTable []int, index int, m int) ([]int
 	// 在第index个元素后面删除元素
 	//fmt.Println("before delete:", myBloom, indexTable)
 	if index > m {
-		fmt.Println("Error")
+		fmt.Println("Error deleteIndex100 > M")
 		return myBloom, indexTable
 	}
 
 	var k = (index+10)/10 - 1
 	var count = 0
-	for i := 100 * k; i < len(myBloom); i++ {
-		//fmt.Println("***")
+	for i := indexTable[k]; i < len(myBloom); i++ {
 		if myBloom[i] == 0 {
 			count++
 		}
-		if count == (index - k) {
+		if count == (index - k*10) {
 			if myBloom[i+1] == 1 {
 				myBloom = append(myBloom[:i+1], myBloom[i+2:]...)
 
@@ -30,7 +29,6 @@ func DeleteEleIndex100(myBloom []int, indexTable []int, index int, m int) ([]int
 				return myBloom, indexTable
 				break
 			} else {
-				fmt.Println("Not Found!")
 				return myBloom, indexTable
 			}
 		}
@@ -42,9 +40,8 @@ func DeleteEleIndex100(myBloom []int, indexTable []int, index int, m int) ([]int
 // 有索引表的删除元素操作
 func DeleteEleIndex(myBloom []int, indexTable []int, index int, m int) ([]int, []int) {
 	// 在第index个元素后面删除元素
-	//fmt.Println("before delete:", myBloom)
 	if index > m {
-		fmt.Println("Error")
+		fmt.Println("Error deleteIndex > M")
 		return myBloom, indexTable
 	}
 
@@ -56,11 +53,8 @@ func DeleteEleIndex(myBloom []int, indexTable []int, index int, m int) ([]int, [
 	if myBloom[indexTable[index-1]+1] == 1 {
 		myBloom = append(myBloom[:indexTable[index-1]+1], myBloom[indexTable[index-1]+2:]...)
 	} else {
-		//fmt.Println("Not Found!")
 		return myBloom, indexTable
 	}
-
-	//fmt.Println("after delete:", myBloom)
 	return myBloom, indexTable
 }
 
@@ -68,19 +62,15 @@ func DeleteEleIndex(myBloom []int, indexTable []int, index int, m int) ([]int, [
 func DeleteEle(myBloom []int, index int, m int) []int {
 	var count = 0
 	for i := 0; i < len(myBloom); i++ {
-		//fmt.Println("***")
 		if myBloom[i] == 0 {
 			count++
 		}
 		if count == index {
 			if myBloom[i+1] == 1 {
 				myBloom = append(myBloom[:i+1], myBloom[i+2:]...)
-				//fmt.Println("after delete:",myBloom)
-				//fmt.Println("delete!")
 				return myBloom
 				break
 			} else {
-				//fmt.Println("Not Found!")
 				return myBloom
 			}
 		}

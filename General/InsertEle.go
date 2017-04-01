@@ -7,7 +7,8 @@ func InsertEleIndex100(myBloom []int, indexTable []int, index int, m int) ([]int
 	// 在第index个0后面插入元素
 	//fmt.Println("befor insert:", myBloom, indexTable)
 	if index >= m {
-		fmt.Println("Error")
+		fmt.Println("insert Error")
+		fmt.Println("insert index:", index)
 		return myBloom, indexTable
 	}
 
@@ -17,20 +18,20 @@ func InsertEleIndex100(myBloom []int, indexTable []int, index int, m int) ([]int
 	}
 	var k = (index+10)/10 - 1
 	var count = 0
-	for i := 10 * k; i < len(myBloom); i++ {
+	for i := indexTable[k]; i < len(myBloom); i++ {
 		//fmt.Println("***")
 		if myBloom[i] == 0 {
 			count++
 		}
-		if count == (index - k) {
+		if count == (index - k*10) {
 			last := append([]int{}, myBloom[i+1:]...)
 			myBloom = append(myBloom[0:i+1], 1)
 			myBloom = append(myBloom, last...)
-			//fmt.Println("after insert:", myBloom, indexTable)
 			return myBloom, indexTable
 			break
 		}
 	}
+	//fmt.Println("after insert:", myBloom, indexTable)
 	return myBloom, indexTable
 }
 
@@ -50,8 +51,6 @@ func InsertEleIndex(myBloom []int, indexTable []int, index int, m int) ([]int, [
 	last := append([]int{}, myBloom[indexTable[index-1]+1:]...)
 	myBloom = append(myBloom[0:indexTable[index-1]+1], 1)
 	myBloom = append(myBloom, last...)
-
-	//fmt.Println("after insert:",myBloom)
 	return myBloom, indexTable
 }
 
@@ -72,7 +71,6 @@ func InsertEle(myBloom []int, index int) []int {
 			last := append([]int{}, myBloom[i+1:]...)
 			myBloom = append(myBloom[0:i+1], 1)
 			myBloom = append(myBloom, last...)
-			//fmt.Println("after insert:",myBloom)
 			return myBloom
 			break
 		}
